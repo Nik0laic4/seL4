@@ -373,9 +373,11 @@ BOOT_CODE bool_t init_cpu(
     cpuid_007h_ebx_t ebx_007;
     ebx_007.words[0] = x86_cpuid_ebx(0x7, 0);
     if (cpuid_007h_ebx_get_smap(ebx_007)) {
-        /* if we have user stack trace enabled or dangerous code injection then we cannot
-         * enable this as SMAP will make them fault. */
-        if (!config_set(CONFIG_PRINTING) && !config_set(CONFIG_DANGEROUS_CODE_INJECTION)) {
+        /* enable SMAP even with CONFIG_PRINTING. The user stack
+         * trace (Arch_userStackTrace) reads user memory via the kernel window
+         * (readWordFromVSpace -> paddr_to_pptr), which is supervisor-mapped, so
+         * SMAP does not fault it. Only dangerous code injection still blocks. */
+        if (!config_set(CONFIG_DANGEROUS_CODE_INJECTION)) {
             write_cr4(read_cr4() | CR4_SMAP);
         }
     }
